@@ -1,5 +1,4 @@
 CC=gcc
-CFLAGS=-I
 
 chip8: main.o
 	$(CC) main.o -o chip8
