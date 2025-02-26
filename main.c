@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <SDL2/SDL.h>
 
 typedef struct context
 {
@@ -28,7 +29,7 @@ typedef struct context
 	int8_t DTR;
 	// sound timer register
 	int8_t STR;
-} Context; 
+} Context;
 
 // function to place pre-designed fonts into memory from 050 - 09F (80 - 159 in decimal)
 void setup_fonts(Context context)
@@ -39,7 +40,7 @@ void setup_fonts(Context context)
 	context.memory[0x052] = 0x90;
 	context.memory[0x053] = 0x90;
 	context.memory[0x054] = 0xF0;
-	
+
 	// font of 1
 	context.memory[0x055] = 0x20;
 	context.memory[0x056] = 0x60;
@@ -148,10 +149,56 @@ void setup_fonts(Context context)
 }
 
 int main(int argc, char* argv[]) {
-	Context context;	
+	Context context;
 
 	setup_fonts(context);
-	
 
-    return 0;
+	// Setup window
+	SDL_Window* window = NULL;
+
+	// Window surface
+	SDL_Surface* screenSurface = NULL;
+
+	// Init SDL
+	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+	  printf("SDL failed to init: %s\n", SDL_GetError());
+	} else {
+	  // Create the window (64 x 32)
+	  window = SDL_CreateWindow("Basic Window", SDL_WINDOWPOS_UNDEFINED,
+				    SDL_WINDOWPOS_UNDEFINED, 640,
+				    320, SDL_WINDOW_SHOWN);
+
+	  if (window == NULL) {
+	    printf("Window failed to create: %s\n", SDL_GetError());
+	  } else {
+	    // Get window surface
+	    screenSurface = SDL_GetWindowSurface(window);
+
+	    // Make it just white
+	    SDL_FillRect(screenSurface, NULL, SDL_MapRGB(screenSurface->format,
+							 0xFF, 0xFF, 0xFF));
+
+	    // Update surface
+	    SDL_UpdateWindowSurface(window);
+
+	    // trick to get window to stay up
+	    SDL_Event e;
+	    int quit = 0;
+	    while (quit == 0) {
+	      while (SDL_PollEvent(&e)) {
+		if (e.type  == SDL_QUIT)
+		  quit = 1;
+	      }
+	    }
+			    
+	  }
+	}
+
+	// Destroy the window
+	SDL_DestroyWindow(window);
+
+	// Quit SDL subsystems
+	SDL_Quit();
+
+	return 0;
 }
