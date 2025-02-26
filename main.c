@@ -29,7 +29,7 @@ typedef struct Register
 
 int main(int argc, char* argv[]) {
 	register_t registers;	
-    	printf("int8_t size = %d byte, int16_t size = %d bytes\n", sizeof(registers.V0), sizeof(registers.I));
+    	printf("int8_t size = %ld byte, int16_t size = %ld bytes\n", sizeof(registers.V0), sizeof(registers.I));
 
     	return 0;
 }
