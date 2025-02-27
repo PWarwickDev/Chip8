@@ -6,13 +6,13 @@
 typedef struct context
 {
 	// memory of 4096 bytes (4 kB)
-	int8_t memory[4096];
+	unsigned char memory[4096];
 
 	// data Registers (for V0-VF)
-	int8_t V[16];
+	unsigned char V[16];
 
 	// stack with 16 slots
-	int16_t stack[16];
+	unsigned short stack[16];
 
 	// frame buffer of 64 x 32
 	int matrix[64][32];
@@ -20,15 +20,18 @@ typedef struct context
 	// Special registers
 
 	// address Register (only gets loaded with 12-bits)
-	int16_t I;
+	unsigned short I;
 	// program counter
-	int16_t PC;
+	unsigned short PC;
 	// stack pointer
-	int8_t SP;
+	unsigned short SP;
 	// delay timer register
-	int8_t DTR;
+	unsigned char DTR;
 	// sound timer register
-	int8_t STR;
+	unsigned char STR;
+
+  unsigned char keys[16];
+  
 } Context;
 
 // function to place pre-designed fonts into memory from 050 - 09F (80 - 159 in decimal)
