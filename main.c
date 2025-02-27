@@ -29,9 +29,9 @@ typedef struct context
 	unsigned char DTR;
 	// sound timer register
 	unsigned char STR;
+	// keys array
+ 	unsigned char keys[16];
 
-  unsigned char keys[16];
-  
 } Context;
 
 // function to place pre-designed fonts into memory from 050 - 09F (80 - 159 in decimal)
@@ -193,7 +193,6 @@ int main(int argc, char* argv[]) {
 		  quit = 1;
 	      }
 	    }
-			    
 	  }
 	}
 
