@@ -151,15 +151,50 @@ void setup_fonts(Context context)
 
 }
 
-void loadProgram(char* fileName, Context context) {
-  
+// Add target program into interpreter memory
+int loadProgram(char* fileName, Context context) {
+  FILE *fp = fopen(fileName, "r");
+
+  // Scan file contents into memory byte by byte
+  if (fp == NULL) {
+    printf("Error: File loaded in by CLI not found.\n");
+    return -1;
+  } else {
+    char c;
+    // start loading at 0x200, but don't modify PC
+    int i = context.PC;
+    while (fscanf(fp, "%c", &c) != EOF) {
+      context.memory[i] = c;
+      i++;
+    }
+  }
+
+  fclose(fp);
+
+  return 0;
 }
 		    
 
 int main(int argc, char* argv[]) {
-  Context context;
+  // Check for CLI file input
+  if (argc != 2) {
+    printf("Error: Run program as ./chip8 <filename>\n");
+    return -1;
+  }
 
+  // Setup program context struct
+  Context context;
+  // Program counter starts at 200
+  context.PC = 0x200;
+
+  // load fonts in
   setup_fonts(context);
+
+  // load target program into memory
+  if (loadProgram(argv[1], context) != 0) {
+    // fail early due to file error
+    return -1;
+  }
 
   // Setup window
   SDL_Window* window = NULL;
