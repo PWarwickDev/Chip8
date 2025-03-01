@@ -371,28 +371,31 @@ int main(int argc, char* argv[]) {
 
 	// send instruction for decode + execution
 	decodeThenExec(instruction, &context);
-	
-	// redraw
-	for (int i = 0; i < 32; i++) {
-	  for (int j = 0; j < 64; j++) {
-	    if (context.graphics[(i * 64) + j] == 0x1) {
-	      // set rendered pixel to white
-	      SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-	    } else {
-	      // set rendered pixel to black
-	      SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
-	    }
 
-	    // setup rectangle
-	    SDL_Rect r;
-	    r.x = j * 10;
-	    r.y = i * 10;
-	    r.w = 10;
-	    r.h = 10;
+	// only draw when instruction is 0xDXYN
+	if (instruction >> 12 == 0xD) {
+	  // redraw
+	  for (int i = 0; i < 32; i++) {
+	    for (int j = 0; j < 64; j++) {
+	      if (context.graphics[(i * 64) + j] == 0x1) {
+		// set rendered pixel to white
+		SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+	      } else {
+		// set rendered pixel to black
+		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
+	      }
+
+	      // setup rectangle
+	      SDL_Rect r;
+	      r.x = j * 10;
+	      r.y = i * 10;
+	      r.w = 10;
+	      r.h = 10;
 	    
 
-	    SDL_RenderFillRect(renderer, &r);
-	    SDL_RenderPresent(renderer);
+	      SDL_RenderFillRect(renderer, &r);
+	      SDL_RenderPresent(renderer);
+	    }
 	  }
 	}
 
