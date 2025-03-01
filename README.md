@@ -32,7 +32,24 @@ convention. Includes a mapped way of graphically displaying 0-9 and A-F.
 **GRAPHICS**
 
 - Using SDL to display the 64 x 32 pixel display, but enlarged the screen to be
-640 x 320 pixels for more powerful modern monitors.
+640 x 320 pixels for more powerful modern monitors. Off is black, on is white.
+
+- The main instruction for changing pixel colors is 0xDXYN. In my implementation
+of this instruction it goes as follows:
+   - Get x-pos from V[0xX] register, and y-pos from V[0xY] register.
+   - Reset the register V[0xF] to zero.
+   - From row 0 to row N, get the Nth byte of that sprite row data using the
+   current value of the I register. This data is then compared to current screen
+   data.
+   - In another loop from 0-7 bits of a sprite row, first do a bounds-check to
+   see if data should even be written. Then determine the index of the pixel to
+   be compared in the graphics array in the program context struct. The screen pixel
+   is then compared to the current sprite pixel which has been bitwise AND'd out of
+   the current sprite row.
+   - First check if screen pixel is the same as the sprite pixel using bitwise AND,
+   if they are, then V[0xF] is set to 1, and the current screen pixel is set to 0.
+   - Then check if screen pixel is 0x0, while the sprite pixel is 0x1. If so, current
+   screen pixel is set to 0x1.
 
 
 **Sources:**

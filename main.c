@@ -213,6 +213,8 @@ void decodeThenExec(unsigned short instruction, Context *context) {
     break;
 
   case 0x1:
+    // 0x1NNN: jumping to addr NNN
+    context->PC = NNN;
     break;
 
   case 0x2:
@@ -233,6 +235,8 @@ void decodeThenExec(unsigned short instruction, Context *context) {
     break;
 
   case 0x7:
+    // 0x7XNN: adds value NN to immediate register V[X]
+    context->V[nibble2] += NN;
     break;
 
   case 0x8:
@@ -278,9 +282,8 @@ void decodeThenExec(unsigned short instruction, Context *context) {
 	  // get screen pixel
 	  unsigned char screenPix = context->graphics[i];
 	  // get sprite pixel
-	  unsigned char spritePix = (spriteRowData & (1 << 7 - bit)) != 0;
+	  unsigned char spritePix = (spriteRowData & (1 << (7 - bit))) != 0;
 
-	  printf("ScrPix = %d, SprPix = %d\n", screenPix, spritePix);
 	  // comparison
 	  if (screenPix & spritePix) {
 	    // set VF to 1, screen pixel to off
@@ -340,7 +343,7 @@ int main(int argc, char* argv[]) {
     printf("SDL failed to init: %s\n", SDL_GetError());
   } else {
     // Create the window (64 x 32)
-    window = SDL_CreateWindow("Basic Window", SDL_WINDOWPOS_UNDEFINED,
+    window = SDL_CreateWindow("Chip-8", SDL_WINDOWPOS_UNDEFINED,
 			      SDL_WINDOWPOS_UNDEFINED, 640,
 			      320, SDL_WINDOW_SHOWN);
 
