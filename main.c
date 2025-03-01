@@ -198,8 +198,112 @@ void decodeThenExec(unsigned short instruction, Context *context) {
   unsigned char NN = (instruction & 0x00FF);
 
   // 2 + 3 + 4 nibbles combined (NNN). Immediate 12-bit memory address for use.
-  unsigned short NNN = (instruction & 0x0FFF); 
-  
+  unsigned short NNN = (instruction & 0x0FFF);
+
+  // break up cases by the first nibble
+  switch(nibble1) {
+  case 0x0:
+    // 0x00E0: clear the screen pixel by pixel
+    if (instruction == 0x00E0) {
+      for (int i = 0; i < (64 * 32) - 1; i++) {
+	context->graphics[i] = 0;
+      }
+    }
+    
+    break;
+
+  case 0x1:
+    break;
+
+  case 0x2:
+    break;
+
+  case 0x3:
+    break;
+
+  case 0x4:
+    break;
+
+  case 0x5:
+    break;
+
+  case 0x6:
+    // 0x6XNN: set V[X] to NN
+    context->V[nibble2] = NN;
+    break;
+
+  case 0x7:
+    break;
+
+  case 0x8:
+    break;
+
+  case 0x9:
+    break;
+
+  case 0xA:
+    // ANNN: store NNN into I reg
+    context->I = NNN;
+    break;
+
+  case 0xB:
+    break;
+
+  case 0xC:
+    break;
+
+  case 0xD:
+    // DXYN: Draw sprite at position VX, VY with N
+    // bytes of sprite data starting at address stored in I
+
+    // VF is set to 0x1 if set pixels are changed, 0x0 otherwise
+
+    // get coords
+    unsigned char x = context->V[nibble2] % 64;
+    unsigned char y = context->V[nibble3] % 32;
+
+    // reset VF
+    context->V[0xF] = 0;
+
+    for (int row = 0; row < nibble4; row++) {
+      // get Nth byte of sprite data
+      unsigned char spriteRowData = context->memory[context->I + row];
+
+      // check each bit of sprite row
+      for (int bit = 0; bit < 8; bit++) {
+	// bounds check
+        if ((x + bit < 64) && (y + row < 32)) {
+	  // get index of current bit
+	  int i = (x + bit) + ((y + row) * 64);
+	  // get screen pixel
+	  unsigned char screenPix = context->graphics[i];
+	  // get sprite pixel
+	  unsigned char spritePix = (spriteRowData & (1 << 7 - bit)) != 0;
+
+	  printf("ScrPix = %d, SprPix = %d\n", screenPix, spritePix);
+	  // comparison
+	  if (screenPix & spritePix) {
+	    // set VF to 1, screen pixel to off
+	    context->V[0xF] = 1;
+	    context->graphics[i] = 0x0;
+	  }
+	  if (!screenPix && spritePix == 1) {
+	    context->graphics[i] = 0x1;
+	  }
+	}
+
+      }
+      
+    }
+    
+    break;
+
+  case 0xE:
+    break;
+
+  case 0xF:
+    break;
+  }
   
 }
 		    
@@ -240,38 +344,58 @@ int main(int argc, char* argv[]) {
 			      SDL_WINDOWPOS_UNDEFINED, 640,
 			      320, SDL_WINDOW_SHOWN);
 
+    SDL_Renderer* renderer = NULL;
+    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+
+    // set background as black
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
+
+    SDL_RenderClear(renderer);
+
     if (window == NULL) {
       printf("Window failed to create: %s\n", SDL_GetError());
     } else {
-      // Get window surface
-      screenSurface = SDL_GetWindowSurface(window);
-
-      // Make it just white
-      SDL_FillRect(screenSurface, NULL, SDL_MapRGB(screenSurface->format,
-						   0xFF, 0xFF, 0xFF));
-
-      // Update surface
-      SDL_UpdateWindowSurface(window);
 
       // trick to get window to stay up
       SDL_Event e;
       int quit = 0;
+
       while (quit == 0) {
+
+	while (SDL_PollEvent(&e)) {
+	  if (e.type  == SDL_QUIT)
+	    quit = 1;
+	}
 	// fetch instruction
 	unsigned short instruction = fetch(&context);
 
 	// send instruction for decode + execution
 	decodeThenExec(instruction, &context);
 	
-	while (SDL_PollEvent(&e)) {
-	  if (e.type  == SDL_QUIT)
-	    quit = 1;
+	// redraw
+	for (int i = 0; i < 32; i++) {
+	  for (int j = 0; j < 64; j++) {
+	    if (context.graphics[(i * 64) + j] == 0x1) {
+	      // set rendered pixel to white
+	      SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+	    } else {
+	      // set rendered pixel to black
+	      SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
+	    }
 
-	
+	    // setup rectangle
+	    SDL_Rect r;
+	    r.x = j * 10;
+	    r.y = i * 10;
+	    r.w = 10;
+	    r.h = 10;
+	    
+
+	    SDL_RenderFillRect(renderer, &r);
+	    SDL_RenderPresent(renderer);
+	  }
 	}
 
-	// delay by 1ms
-	SDL_Delay(1);
       }
     }
   }
