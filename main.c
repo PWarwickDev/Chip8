@@ -176,9 +176,6 @@ int loadProgram(char *fileName, Context *context) {
 
 // takes 2 bytes from memory, combines them to make a decodable instruction.
 unsigned short fetch(Context *context) {
-  // Program conclusion
-  if (&context->memory[context->PC] == NULL)
-    return -1;
 
   unsigned short instruction;
 
@@ -188,6 +185,22 @@ unsigned short fetch(Context *context) {
   context->PC += 2;
   
   return instruction;
+}
+
+void decodeThenExec(unsigned short instruction, Context *context) {
+  // extract nibbles from instruction
+  unsigned char nibble1 = (instruction & 0xF000) >> 12;
+  unsigned char nibble2 = (instruction & 0x0F00) >> 8;
+  unsigned char nibble3 = (instruction & 0x00F0) >> 4;
+  unsigned char nibble4 = instruction & 0x000F;
+
+  // 3 + 4 nibbles combined (NN). Immediate 8-bit number for use.
+  unsigned char NN = (instruction & 0x00FF);
+
+  // 2 + 3 + 4 nibbles combined (NNN). Immediate 12-bit memory address for use.
+  unsigned short NNN = (instruction & 0x0FFF); 
+  
+  
 }
 		    
 
@@ -244,17 +257,21 @@ int main(int argc, char* argv[]) {
       SDL_Event e;
       int quit = 0;
       while (quit == 0) {
+	// fetch instruction
+	unsigned short instruction = fetch(&context);
+
+	// send instruction for decode + execution
+	decodeThenExec(instruction, &context);
+	
 	while (SDL_PollEvent(&e)) {
 	  if (e.type  == SDL_QUIT)
 	    quit = 1;
 
-	  // main emulation cycle
-
-	  unsigned short instruction = fetch(&context);
-	  printf("PC: %d\n", context.PC);
-	  
-	  
+	
 	}
+
+	// delay by 1ms
+	SDL_Delay(1);
       }
     }
   }
