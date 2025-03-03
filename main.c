@@ -13,6 +13,7 @@ typedef struct context
 
   // stack with 16 slots
   unsigned short stack[16];
+  int top;
 
   // frame buffer of 64 x 32
   int graphics[64 * 32];
@@ -33,6 +34,23 @@ typedef struct context
   unsigned char keys[16];
 
 } Context;
+
+// returns 0 on failure, 1 on success
+int push(unsigned short val, Context *context) {
+  if (context->top >= 15)
+    return 0;
+
+  context->top++;
+  context->stack[context->top] = val;
+  return 1;
+}
+
+// returns address of top and pops
+// pre-req is to have stack not be empty
+unsigned short pop(Context *context) {
+  // result is the address on the top of the stack
+  return context->stack[context->top--];
+}
 
 // function to place pre-designed fonts into memory from 050 - 09F (80 - 159 in decimal)
 void setup_fonts(Context *context)
@@ -203,11 +221,21 @@ void decodeThenExec(unsigned short instruction, Context *context) {
   // break up cases by the first nibble
   switch(nibble1) {
   case 0x0:
+    // 0x0NNN: Does not need implementation as I'm not emulating a
+    // specific device for chip8 such as the COSMAC VIP
+    
     // 0x00E0: clear the screen pixel by pixel
     if (instruction == 0x00E0) {
       for (int i = 0; i < (64 * 32) - 1; i++) {
 	context->graphics[i] = 0;
       }
+    }
+
+    // 0x00EE: Return from subrotine
+    // Pops from stack and sets PC to that address
+    if (instruction == 0x00EE) {
+      if (context->top != -1)
+	context->PC = pop(context);
     }
     
     break;
@@ -218,15 +246,31 @@ void decodeThenExec(unsigned short instruction, Context *context) {
     break;
 
   case 0x2:
+    // 0x2NNN: Call subroutine at mem addr NNN
+    // must first push curr PC to stack, then set pc to NNN
+    push(context->PC, context);
+    context->PC = NNN;
+    
     break;
 
   case 0x3:
+    // 0x3XNN: Skip one instruction if VX == NN
+    if (context->V[nibble2] == NN)
+      // skip 2 byte instruction
+      context->PC += 2;
     break;
 
   case 0x4:
+    // 0x4XNN: Skip one instruction if VX != NN
+    if (context->V[nibble2] != NN)
+      // skip 2 byte instruction
+      context->PC += 2;
     break;
 
   case 0x5:
+    // 0x5XY0: Skip an instruction if VX == VY
+    if (context->V[nibble2] == context->V[nibble3])
+      context->PC += 2;
     break;
 
   case 0x6:
@@ -240,9 +284,93 @@ void decodeThenExec(unsigned short instruction, Context *context) {
     break;
 
   case 0x8:
+    // Logical and arithmetic instructions
+    
+    switch(nibble4) {
+    case 0x0:
+      // 0x8XY0: VX is set to val of VY
+      context->V[nibble2] = context->V[nibble3];
+      
+      break;
+
+    case 0x1:
+      // 0x8XY1: VX = VX | VY (bitwise OR)
+      context->V[nibble2] = context->V[nibble2] | context->V[nibble3];
+      
+      break;
+
+    case 0x2:
+      // 0x8XY2: VX = VX & VY (bitwise AND)
+      context->V[nibble2] = context->V[nibble2] & context->V[nibble3];
+      
+      break;
+
+    case 0x3:
+      // 0x8XY3: VX = VX ^ VY (bitwise XOR)
+      context->V[nibble2] = context->V[nibble2] ^ context->V[nibble3];
+      
+      break;
+
+    case 0x4:
+      // 0x8XY4: VX = VX + VY
+      // VF set to 1 if there is overflow, 0 otherwise
+      if (context->V[nibble2] > (255 - context->V[nibble3])) {
+	context->V[0xF] = 1;
+      } else {
+	context->V[0xF] = 0;
+      }
+
+      context->V[nibble2] = context->V[nibble2] + context->V[nibble3];
+      
+      break;
+
+    case 0x5:
+      // 0x8XY5: VX = VX - VY
+      // VF is set to 1 if VX > VY, 0 otherwise
+      if (context->V[nibble2] > context->V[nibble3]) {
+	context->V[0xF] = 1;
+      } else {
+	context->V[0xF] = 0;
+      }
+
+      context->V[nibble2] = context->V[nibble2] - context->V[nibble3];
+
+      break;
+
+    case 0x6:
+      // TODO: implement configurable 0x8XY6 which was different for
+      // COSMAC VIP vs chip-48, etc.
+
+      break;
+
+    case 0x7:
+      // 0x8XY7: VX = VY - VX
+      // VF is set to 1 if VY > VX, 0 otherwise
+      if (context->V[nibble3] > context->V[nibble2]) {
+	context->V[0xF] = 1;
+      } else {
+	context->V[0xF] = 0;
+      }
+
+      context->V[nibble2] = context->V[nibble3] - context->V[nibble2];
+      
+      break;
+
+    case 0xE:
+      // TODO: implement configurable 0x8XYE which was different for
+      // COSMAC VIP vs chip-48, etc.
+
+      break;
+      
+    default:
+      printf("Error: Default in 0x8 instructions reached in decodeThenExec!\n");
+    }
     break;
 
   case 0x9:
+    // 0x5XY0: Skip an instruction if VX != VY
+    if (context->V[nibble2] != context->V[nibble3])
+      context->PC += 2;
     break;
 
   case 0xA:
@@ -251,9 +379,16 @@ void decodeThenExec(unsigned short instruction, Context *context) {
     break;
 
   case 0xB:
+    // TODO: make this configurable as different versions used
+    // different implementations of 0xBNNN
+    // 0xBNNN: COSMAC VIP implementation; jump to NNN plus the value in reg V0
+    context->PC = NNN + context->V[0x0];
     break;
 
   case 0xC:
+    // 0xCXNN: Puts random number binary AND'd with NN into VX
+    context->V[nibble2] = (rand() % NN) & NN;
+    
     break;
 
   case 0xD:
@@ -306,6 +441,9 @@ void decodeThenExec(unsigned short instruction, Context *context) {
 
   case 0xF:
     break;
+
+    default:
+      printf("Error: Default case reached in decodeThenExec!\n");
   }
   
 }
@@ -322,6 +460,8 @@ int main(int argc, char* argv[]) {
   Context context;
   // Program counter starts at 200
   context.PC = 0x200;
+  // set stack top to empty val
+  context.top = -1;
 
   // load fonts in
   setup_fonts(&context);
@@ -376,7 +516,7 @@ int main(int argc, char* argv[]) {
 	decodeThenExec(instruction, &context);
 
 	// only draw when instruction is 0xDXYN
-	if (instruction >> 12 == 0xD) {
+	if (instruction >> 12 == 0xD || instruction == 0x00E0) {
 	  // redraw
 	  for (int i = 0; i < 32; i++) {
 	    for (int j = 0; j < 64; j++) {
