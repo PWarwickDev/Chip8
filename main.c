@@ -437,6 +437,19 @@ void decodeThenExec(unsigned short instruction, Context *context) {
     break;
 
   case 0xE:
+    // 0xEX9E: Skip instruction if key corresponding to the value in V[X] is pressed
+    if (NN == 0x9E) {
+      if (context->keys[context->V[nibble2]] == 0x1) {
+	context->PC += 2;
+      }
+    }
+
+    // 0xEA1: Skip if key in V[X] is not pressed
+    if (NN == 0xA1) {
+      if (context->keys[context->V[nibble2]] == 0x0) {
+	context->PC += 2;
+      }
+    }
     break;
 
   case 0xF:
@@ -446,6 +459,11 @@ void decodeThenExec(unsigned short instruction, Context *context) {
       printf("Error: Default case reached in decodeThenExec!\n");
   }
   
+}
+
+void timersUpdate(Context *context) {
+  
+
 }
 		    
 
