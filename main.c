@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <time.h>
 #include <SDL2/SDL.h>
 
 typedef struct context
@@ -453,6 +454,73 @@ void decodeThenExec(unsigned short instruction, Context *context) {
     break;
 
   case 0xF:
+    
+    if (NN == 0x07) {
+      // 0xFX07: Set V[X] to delay timer val
+      context->V[nibble2] = context->DTR;
+    } else if (NN == 0x15) {
+      // 0xFX15: set delay timer to V[x]
+      context->DTR = context->V[nibble2];
+    } else if (NN == 0x15) {
+      // 0xFX18: set sound timer to V[x]
+      context->STR = context->V[nibble2];
+    } else if (NN == 0x1E) {
+      // 0xFX1E: Add to index
+      context->I += context->V[nibble2];
+    } else if (NN == 0x0A) {
+      // 0xFX0A: Get a key, busy waiting the program until one is hit
+      int keyFlag = 0;
+      for(int i = 0; i < 16; i++) {
+	if (context->keys[i] == 0x1) {
+	  // convert the int val to hex
+	  keyFlag = 1;
+	  context->V[nibble2] = (i >> 8) & 0xFF;
+	}
+      }
+
+      // stall the program until keypress
+      if (!keyFlag) {
+	context->PC -= 2;
+      }
+      
+    } else if (NN == 0x29) {
+      // 0xFX29: Set I to a font character in V[x]
+      // extract last hex char of V[x] for this
+      context->I = context->V[nibble2] & 0x01;
+    } else if (NN == 0x33) {
+      // 0xFX33: Binary code a hex value into memory
+      // ex. 156 (9C in hex) -> [1] [5] [6] in memory starting at addr I
+      int val = context->V[nibble2];
+      
+      int digits[3] = {0, 0, 0};
+
+      // extract digits
+      for (int i = 2; val > 0; i--) {
+	digits[i] = val % 10;
+	val = val / 10;
+      }
+
+      context->memory[context->I] = digits[0];
+      context->memory[(context->I) + 1] = digits[1];
+      context->memory[(context->I) + 2] = digits[2];
+      
+    } else if (NN == 0x55) {
+      // 0xFX55: Load V[0] -> V[X] into memory starting at I
+
+      for (int i = 0; i <= nibble2; i++) {
+	context->memory[(context->I) + i] = context->V[i];
+      }
+      
+    } else if (NN == 0x65) {
+      // 0xFX65: Opposite of 0xFX55, load memory into registers
+
+      for (int i = 0; i <= nibble2; i++) {
+	context->V[i] = context->memory[(context->I) + i];
+      }
+				       
+    }
+    
+    
     break;
 
     default:
@@ -461,9 +529,99 @@ void decodeThenExec(unsigned short instruction, Context *context) {
   
 }
 
-void timersUpdate(Context *context) {
-  
+void beep() {
+  // output sound
+  fprintf(stdout, "\aBeep!\n");
+  printf("Hhelo\n");
+}
 
+void updateTimers(Context *context) {
+  // decrement sound timer and beep
+  if (context->STR > 0) {
+    beep();
+    context->STR--;
+  }
+
+  // decrement delay timer
+  if (context->DTR > 0) {
+    context->DTR--;
+  }
+		     
+}
+// Keys mapped by the 16 keyboard keys
+// 1 2 3 4
+// q w e r
+// a s d f
+// z x c v
+void updateKey(char key, Context *context) {
+  switch(key) {
+  case '1':
+    context->keys[0] = 0x1;
+    break;
+  case '2':
+    context->keys[1] = 0x1;
+    break;
+
+  case '3':
+    context->keys[2] = 0x1;
+    break;
+
+  case '4':
+    context->keys[3] = 0x1;
+    break;
+
+  case 'q':
+    context->keys[4] = 0x1;
+    break;
+
+  case 'w':
+    context->keys[5] = 0x1;
+    break;
+
+  case 'e':
+    context->keys[6] = 0x1;
+    break;
+
+  case 'r':
+    context->keys[7] = 0x1;
+    break;
+    
+  case 'a':
+    context->keys[8] = 0x1;
+    break;
+
+  case 's':
+    context->keys[9] = 0x1;
+    break;
+
+  case 'd':
+    context->keys[10] = 0x1;
+    break;
+
+  case 'f':
+    context->keys[11] = 0x1;
+    break;
+
+  case 'z':
+    context->keys[12] = 0x1;
+    break;
+
+  case 'x':
+    context->keys[13] = 0x1;
+    break;
+
+  case 'c':
+    context->keys[14] = 0x1;
+    break;
+
+  case 'v':
+    context->keys[15] = 0x1;
+    break;
+    
+    // other keys don't get dealt with
+  default:
+    break;
+  }
 }
 		    
 
@@ -521,8 +679,24 @@ int main(int argc, char* argv[]) {
       SDL_Event e;
       int quit = 0;
 
+      // used to determine when to update timers
+      Uint32 oldTicks = SDL_GetTicks();
+      Uint32 oldDelta = 0;
+
       while (quit == 0) {
 
+	// update tick values
+	oldDelta = SDL_GetTicks() - oldTicks;
+	oldTicks = SDL_GetTicks();
+
+	// if time diff is greater or equal to 1/60
+	printf("%d\n", oldDelta);
+	if (oldDelta >= 16.67) 
+	  updateTimers(&context);
+
+	// get the key and deal with it
+	//updateKey(getc(stdin), &context);
+	
 	while (SDL_PollEvent(&e)) {
 	  if (e.type  == SDL_QUIT)
 	    quit = 1;
