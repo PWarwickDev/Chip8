@@ -286,7 +286,7 @@ void decodeThenExec(unsigned short instruction, Context *context) {
 
   case 0x8:
     // Logical and arithmetic instructions
-    
+    int overflow = 0;
     switch(nibble4) {
     case 0x0:
       // 0x8XY0: VX is set to val of VY
@@ -316,12 +316,16 @@ void decodeThenExec(unsigned short instruction, Context *context) {
       // 0x8XY4: VX = VX + VY
       // VF set to 1 if there is overflow, 0 otherwise
       if (context->V[nibble2] > (255 - context->V[nibble3])) {
+	overflow = 1;
+      }
+
+      context->V[nibble2] = context->V[nibble2] + context->V[nibble3];
+
+      if (overflow) {
 	context->V[0xF] = 1;
       } else {
 	context->V[0xF] = 0;
       }
-
-      context->V[nibble2] = context->V[nibble2] + context->V[nibble3];
       
       break;
 
@@ -329,13 +333,17 @@ void decodeThenExec(unsigned short instruction, Context *context) {
       // 0x8XY5: VX = VX - VY
       // VF is set to 1 if VX > VY, 0 otherwise
       if (context->V[nibble2] > context->V[nibble3]) {
-	context->V[0xF] = 1;
-      } else {
-	context->V[0xF] = 0;
+	overflow = 1;
       }
 
       context->V[nibble2] = context->V[nibble2] - context->V[nibble3];
 
+      if (overflow) {
+	context->V[0xF] = 1;
+      } else {
+	context->V[0xF] = 0;
+      }
+      
       break;
 
     case 0x6:
@@ -348,12 +356,16 @@ void decodeThenExec(unsigned short instruction, Context *context) {
       // 0x8XY7: VX = VY - VX
       // VF is set to 1 if VY > VX, 0 otherwise
       if (context->V[nibble3] > context->V[nibble2]) {
+	overflow = 1;
+      }
+
+      context->V[nibble2] = context->V[nibble3] - context->V[nibble2];
+
+      if (overflow) {
 	context->V[0xF] = 1;
       } else {
 	context->V[0xF] = 0;
       }
-
-      context->V[nibble2] = context->V[nibble3] - context->V[nibble2];
       
       break;
 
