@@ -281,7 +281,7 @@ void decodeThenExec(unsigned short instruction, Context *context) {
 
   case 0x7:
     // 0x7XNN: adds value NN to immediate register V[X]
-    context->V[nibble2] += NN;
+    context->V[nibble2] += NN & 0x00FF;
     break;
 
   case 0x8:
@@ -319,7 +319,7 @@ void decodeThenExec(unsigned short instruction, Context *context) {
 	overflow = 1;
       }
 
-      context->V[nibble2] = context->V[nibble2] + context->V[nibble3];
+      context->V[nibble2] = (context->V[nibble2] + context->V[nibble3]) & 0x00FF;
 
       if (overflow) {
 	context->V[0xF] = 1;
@@ -336,7 +336,7 @@ void decodeThenExec(unsigned short instruction, Context *context) {
 	overflow = 1;
       }
 
-      context->V[nibble2] = context->V[nibble2] - context->V[nibble3];
+      context->V[nibble2] = (context->V[nibble2] - context->V[nibble3]) & 0x00FF;
 
       if (overflow) {
 	context->V[0xF] = 1;
@@ -347,8 +347,19 @@ void decodeThenExec(unsigned short instruction, Context *context) {
       break;
 
     case 0x6:
-      // TODO: implement configurable 0x8XY6 which was different for
-      // COSMAC VIP vs chip-48, etc.
+      // 0x8XY6:
+      // COSMAC VIP implementation
+      // VX = VY
+      // Shift VX to the right by 1 and set VF to 1 if that bit was 1, else 0
+      context->V[nibble2] = context->V[nibble3];
+      
+      if (context->V[nibble2] & 1) {
+	context->V[0xF] = 1;
+      } else {
+	context->V[0xF] = 0;
+      }
+
+      context->V[nibble2] = context->V[nibble2] >> 1;
 
       break;
 
@@ -359,7 +370,7 @@ void decodeThenExec(unsigned short instruction, Context *context) {
 	overflow = 1;
       }
 
-      context->V[nibble2] = context->V[nibble3] - context->V[nibble2];
+      context->V[nibble2] = (context->V[nibble3] - context->V[nibble2]) & 0x00FF;
 
       if (overflow) {
 	context->V[0xF] = 1;
@@ -370,8 +381,19 @@ void decodeThenExec(unsigned short instruction, Context *context) {
       break;
 
     case 0xE:
-      // TODO: implement configurable 0x8XYE which was different for
-      // COSMAC VIP vs chip-48, etc.
+      // 0x8XYE:
+      // COSMAC VIP implementation
+      // VX = VY
+      // Shift VX to the left by 1 and set VF to 1 if that bit was 1, else 0
+      context->V[nibble2] = context->V[nibble3];
+      
+      if ((context->V[nibble2] >> 7) & 1) {
+	context->V[0xF] = 1;
+      } else {
+	context->V[0xF] = 0;
+      }
+
+      context->V[nibble2] = context->V[nibble2] << 1;
 
       break;
       
@@ -544,99 +566,8 @@ void decodeThenExec(unsigned short instruction, Context *context) {
 void beep() {
   // output sound
   fprintf(stdout, "\aBeep!\n");
-  printf("Hhelo\n");
 }
-
-void updateTimers(Context *context) {
-  // decrement sound timer and beep
-  if (context->STR > 0) {
-    beep();
-    context->STR--;
-  }
-
-  // decrement delay timer
-  if (context->DTR > 0) {
-    context->DTR--;
-  }
-		     
-}
-// Keys mapped by the 16 keyboard keys
-// 1 2 3 4
-// q w e r
-// a s d f
-// z x c v
-void updateKey(char key, Context *context) {
-  switch(key) {
-  case '1':
-    context->keys[0] = 0x1;
-    break;
-  case '2':
-    context->keys[1] = 0x1;
-    break;
-
-  case '3':
-    context->keys[2] = 0x1;
-    break;
-
-  case '4':
-    context->keys[3] = 0x1;
-    break;
-
-  case 'q':
-    context->keys[4] = 0x1;
-    break;
-
-  case 'w':
-    context->keys[5] = 0x1;
-    break;
-
-  case 'e':
-    context->keys[6] = 0x1;
-    break;
-
-  case 'r':
-    context->keys[7] = 0x1;
-    break;
-    
-  case 'a':
-    context->keys[8] = 0x1;
-    break;
-
-  case 's':
-    context->keys[9] = 0x1;
-    break;
-
-  case 'd':
-    context->keys[10] = 0x1;
-    break;
-
-  case 'f':
-    context->keys[11] = 0x1;
-    break;
-
-  case 'z':
-    context->keys[12] = 0x1;
-    break;
-
-  case 'x':
-    context->keys[13] = 0x1;
-    break;
-
-  case 'c':
-    context->keys[14] = 0x1;
-    break;
-
-  case 'v':
-    context->keys[15] = 0x1;
-    break;
-    
-    // other keys don't get dealt with
-  default:
-    break;
-  }
-}
-		    
-
+	    
 int main(int argc, char* argv[]) {
   // Check for CLI file input
   if (argc != 2) {
@@ -691,33 +622,106 @@ int main(int argc, char* argv[]) {
       SDL_Event e;
       int quit = 0;
 
-      // used to determine when to update timers
-      Uint32 oldTicks = SDL_GetTicks();
-      Uint32 oldDelta = 0;
-
       while (quit == 0) {
-
-	// update tick values
-	oldDelta = SDL_GetTicks() - oldTicks;
-	oldTicks = SDL_GetTicks();
-
-	// if time diff is greater or equal to 1/60
-	printf("%d\n", oldDelta);
-	if (oldDelta >= 16.67) 
-	  updateTimers(&context);
-
-	// get the key and deal with it
-	//updateKey(getc(stdin), &context);
 	
 	while (SDL_PollEvent(&e)) {
-	  if (e.type  == SDL_QUIT)
+	  switch (e.type) {
+	    // window was closed
+	  case SDL_QUIT:
 	    quit = 1;
+	    break;
+
+	    // get the key and deal with it
+	    //updateKey(getc(stdin), &context);
+	  case SDL_KEYDOWN:
+	    switch(e.key.keysym.sym) {
+	    case SDLK_1:
+	      context.keys[0] = 0x1;
+	      break;
+	      
+	    case SDLK_2:
+	      context.keys[1] = 0x1;
+	      break;
+
+	    case SDLK_3:
+	      context.keys[2] = 0x1;
+	      break;
+
+	    case SDLK_4:
+	      context.keys[3] = 0x1;
+	      break;
+
+	    case SDLK_q:
+	      context.keys[4] = 0x1;
+	      break;
+
+	    case SDLK_w:
+	      context.keys[5] = 0x1;
+	      break;
+
+	    case SDLK_e:
+	      context.keys[6] = 0x1;
+	      break;
+
+	    case SDLK_r:
+	      context.keys[7] = 0x1;
+	      break;
+    
+	    case SDLK_a:
+	      context.keys[8] = 0x1;
+	      break;
+
+	    case SDLK_s:
+	      context.keys[9] = 0x1;
+	      break;
+
+	    case SDLK_d:
+	      context.keys[10] = 0x1;
+	      break;
+
+	    case SDLK_f:
+	      context.keys[11] = 0x1;
+	      break;
+
+	    case SDLK_z:
+	      context.keys[12] = 0x1;
+	      break;
+
+	    case SDLK_x:
+	      context.keys[13] = 0x1;
+	      break;
+
+	    case SDLK_c:
+	      context.keys[14] = 0x1;
+	      break;
+
+	    case SDLK_v:
+	      context.keys[15] = 0x1;
+	      break;
+    
+	      // other keys don't get dealt with
+	    default:
+	      break;
+	    }
+	    break;
+	    
+	  }
 	}
 	// fetch instruction
 	unsigned short instruction = fetch(&context);
 
 	// send instruction for decode + execution
 	decodeThenExec(instruction, &context);
+
+	// decrement check for timers
+	if (context.DTR > 0) {
+	  --context.DTR;
+	}
+
+	if (context.STR > 0) {
+	  beep();
+	  --context.STR;
+	}
 
 	// only draw when instruction is 0xDXYN
 	if (instruction >> 12 == 0xD || instruction == 0x00E0) {
