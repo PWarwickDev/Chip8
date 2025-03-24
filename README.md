@@ -5,7 +5,9 @@ INTRO:
 
 This project is meant to get my feet wet in the realm of emulator programming. Before tackling
 my already began project of the GameBoy fully, I'm following the recommendation of many 
-emulator devs who say this is a good starting point for this field. 
+emulator devs who say this is a good starting point for this field.
+
+3/23/2025 Update: Mostly complete with some minor flag errors to be worked out in the future if I want to. Overall this project was quite interesting, and made me get back into low-level binary manipulation in a challenging way.
 
 
 **MEMORY**
@@ -51,8 +53,12 @@ of this instruction it goes as follows:
    - Then check if screen pixel is 0x0, while the sprite pixel is 0x1. If so, current
    screen pixel is set to 0x1.
 
+**INPUT**
 
-**Sources:**
+- SDL deals with keyboard events of keyup and keydown. 16 keys [1,2,3,4,q,w,e,r,t,
+a,s,d,f,z,x,c,v] are mapped into keys for the chip-8 emulator.
+
+**SOURCES**
 
 CHIP‐8 Technical Reference
 https://github.com/mattmikolay/chip-8/wiki/CHIP%E2%80%908-Technical-Reference
