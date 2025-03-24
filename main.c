@@ -632,71 +632,143 @@ int main(int argc, char* argv[]) {
 	    break;
 
 	    // get the key and deal with it
-	    //updateKey(getc(stdin), &context);
 	  case SDL_KEYDOWN:
 	    switch(e.key.keysym.sym) {
 	    case SDLK_1:
-	      context.keys[0] = 0x1;
+	      context.keys[0x1] = 0x1;
 	      break;
 	      
 	    case SDLK_2:
-	      context.keys[1] = 0x1;
+	      context.keys[0x2] = 0x1;
 	      break;
 
 	    case SDLK_3:
-	      context.keys[2] = 0x1;
+	      context.keys[0x3] = 0x1;
 	      break;
 
 	    case SDLK_4:
-	      context.keys[3] = 0x1;
+	      context.keys[0xC] = 0x1;
 	      break;
 
 	    case SDLK_q:
-	      context.keys[4] = 0x1;
+	      context.keys[0x4] = 0x1;
 	      break;
 
 	    case SDLK_w:
-	      context.keys[5] = 0x1;
+	      context.keys[0x5] = 0x1;
 	      break;
 
 	    case SDLK_e:
-	      context.keys[6] = 0x1;
+	      context.keys[0x6] = 0x1;
 	      break;
 
 	    case SDLK_r:
-	      context.keys[7] = 0x1;
+	      context.keys[0xD] = 0x1;
 	      break;
     
 	    case SDLK_a:
-	      context.keys[8] = 0x1;
+	      context.keys[0x7] = 0x1;
 	      break;
 
 	    case SDLK_s:
-	      context.keys[9] = 0x1;
+	      context.keys[0x8] = 0x1;
 	      break;
 
 	    case SDLK_d:
-	      context.keys[10] = 0x1;
+	      context.keys[0x9] = 0x1;
 	      break;
 
 	    case SDLK_f:
-	      context.keys[11] = 0x1;
+	      context.keys[0xE] = 0x1;
 	      break;
 
 	    case SDLK_z:
-	      context.keys[12] = 0x1;
+	      context.keys[0xA] = 0x1;
 	      break;
 
 	    case SDLK_x:
-	      context.keys[13] = 0x1;
+	      context.keys[0x0] = 0x1;
 	      break;
 
 	    case SDLK_c:
-	      context.keys[14] = 0x1;
+	      context.keys[0xB] = 0x1;
 	      break;
 
 	    case SDLK_v:
-	      context.keys[15] = 0x1;
+	      context.keys[0xF] = 0x1;
+	      break;
+    
+	      // other keys don't get dealt with
+	    default:
+	      break;
+	    }
+	    break;
+
+	    // key releases
+	    case SDL_KEYUP:
+	    switch(e.key.keysym.sym) {
+	    case SDLK_1:
+	      context.keys[0x1] = 0x0;
+	      break;
+	      
+	    case SDLK_2:
+	      context.keys[0x2] = 0x0;
+	      break;
+
+	    case SDLK_3:
+	      context.keys[0x3] = 0x0;
+	      break;
+
+	    case SDLK_4:
+	      context.keys[0xC] = 0x0;
+	      break;
+
+	    case SDLK_q:
+	      context.keys[0x4] = 0x0;
+	      break;
+
+	    case SDLK_w:
+	      context.keys[0x5] = 0x0;
+	      break;
+
+	    case SDLK_e:
+	      context.keys[0x6] = 0x0;
+	      break;
+
+	    case SDLK_r:
+	      context.keys[0xD] = 0x0;
+	      break;
+    
+	    case SDLK_a:
+	      context.keys[0x7] = 0x0;
+	      break;
+
+	    case SDLK_s:
+	      context.keys[0x8] = 0x0;
+	      break;
+
+	    case SDLK_d:
+	      context.keys[0x9] = 0x0;
+	      break;
+
+	    case SDLK_f:
+	      context.keys[0xE] = 0x0;
+	      break;
+
+	    case SDLK_z:
+	      context.keys[0xA] = 0x0;
+	      break;
+
+	    case SDLK_x:
+	      context.keys[0x0] = 0x0;
+	      break;
+
+	    case SDLK_c:
+	      context.keys[0xB] = 0x0;
+	      break;
+
+	    case SDLK_v:
+	      context.keys[0xF] = 0x0;
 	      break;
     
 	      // other keys don't get dealt with
@@ -723,8 +795,8 @@ int main(int argc, char* argv[]) {
 	  --context.STR;
 	}
 
-	// only draw when instruction is 0xDXYN
-	if (instruction >> 12 == 0xD || instruction == 0x00E0) {
+	// only draw when instruction is 0xDXYN or 0x00E0
+	if (instruction >> 12 == 0xD) {
 	  // redraw
 	  for (int i = 0; i < 32; i++) {
 	    for (int j = 0; j < 64; j++) {
