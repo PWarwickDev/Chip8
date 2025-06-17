@@ -1,13 +1,7 @@
 **Chip8 Emulator Written in C**
 By: Paul Warwick
 
-INTRO:
-
-This project is meant to get my feet wet in the realm of emulator programming. Before tackling
-my already began project of the GameBoy fully, I'm following the recommendation of many 
-emulator devs who say this is a good starting point for this field.
-
-3/23/2025 Update: Mostly complete with some minor flag errors to be worked out in the future if I want to. Overall this project was quite interesting, and made me get back into low-level binary manipulation in a challenging way.
+Mostly complete with some minor flag errors to be worked out in the future if I want to. Overall this project was quite interesting, and made me get back into low-level binary manipulation in a challenging way.
 
 
 **MEMORY**
